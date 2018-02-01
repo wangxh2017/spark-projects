@@ -7,9 +7,11 @@ import com.xuehui.pojo.Task;
 import com.xuehui.untils.MockData;
 import com.xuehui.untils.ParamUtils;
 import com.xuehui.untils.StringUtils;
+import com.xuehui.untils.ValidUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
@@ -206,7 +208,36 @@ public class UserVisitSessionAnalyzeSpark implements Serializable{
         }
 
         final String parameter = _parameter;
+        JavaPairRDD<String, String> filterSessionid2AggrInfoRDD = sessionid2AggrInfoRDD.filter(new Function<Tuple2<String, String>, Boolean>() {
+            @Override
+            public Boolean call(Tuple2<String, String> tuple) throws Exception {
+                String aggregateInfo = tuple._2;
+                if(!ValidUtils.between(aggregateInfo, CommonConstants.SPARK_FIELD_AGE, parameter, CommonConstants.SPARK_PARAM_START_AGE, CommonConstants.SPARK_PARAM_END_AGE)){
+                    return false;
+                }
 
-        return null;
+                if (!ValidUtils.in(aggregateInfo, CommonConstants.SPARK_FIELD_CITY, parameter, CommonConstants.SPARK_PARAM_CITIES)) {
+                    return false;
+                }
+
+                if(!ValidUtils.in(aggregateInfo, CommonConstants.SPARK_FIELD_PROFESSIONAL, parameter, CommonConstants.SPARK_PARAM_PROFESSIONALS)){
+                    return false;
+                }
+
+                if (!ValidUtils.equal(aggregateInfo, CommonConstants.SPARK_FIELD_SEX, parameter, CommonConstants.SPARK_PARAM_SEX)) {
+                    return false;
+                }
+
+                if (!ValidUtils.in(aggregateInfo, CommonConstants.SPARK_FIELD_SEARCH_KEYWORDS, parameter, CommonConstants.SPARK_PARAM_SEARCH_KEYWORDS)) {
+                    return false;
+                }
+
+                if(!ValidUtils.in(aggregateInfo, CommonConstants.SPARK_FIELD_CLICK_CATEGORY_IDS, parameter, CommonConstants.SPARK_FIELD_CLICK_CATEGORY_IDS)){
+                    return false;
+                }
+                return true;
+            }
+        });
+        return filterSessionid2AggrInfoRDD;
     }
 }
