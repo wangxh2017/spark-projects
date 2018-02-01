@@ -19,7 +19,8 @@ import java.io.Serializable;
  * @Description: spark 任务实体类
  * @date 14:43  2018/2/1
  */
-public class Task implements Serializable {
+public class Task implements Serializable{
+
     /**
      * 任务id
      */

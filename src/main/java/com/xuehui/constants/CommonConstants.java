@@ -10,8 +10,15 @@ public class CommonConstants {
 
 
     /** spark 任务参数 */
-    public static final String SPARK_PARAM_START_TIME="start_time";
-    public static final String SPARK_PARAM_END_TIME="end_time";
+    public static final String SPARK_PARAM_START_TIME="startTime";
+    public static final String SPARK_PARAM_END_TIME="endTime";
+    public static final String SPARK_PARAM_START_AGE="startAge";
+    public static final String SPARK_PARAM_END_AGE="endAge";
+    public static final String SPARK_PARAM_CITIES="cities";
+    public static final String SPARK_PARAM_PROFESSIONALS="professionals";
+    public static final String SPARK_PARAM_SEX="sex";
+    public static final String SPARK_PARAM_SEARCH_KEYWORDS="earchKeyWords";
+    public static final String SPARK_PARAM_CLICK_CATEGORY_IDS="clickCategoryIds";
 
     /** spark 字段 */
     public static  final String SPARK_FIELD_SESSION_ID="sessionId";

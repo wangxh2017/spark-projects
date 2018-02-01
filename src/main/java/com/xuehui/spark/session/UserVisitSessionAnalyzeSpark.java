@@ -15,37 +15,38 @@ import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.springframework.stereotype.Service;
+import scala.Serializable;
 import scala.Tuple2;
 
 import javax.annotation.Resource;
-import javax.naming.ldap.PagedResultsControl;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by Administrator on 2018/2/1.
  */
 @Service
-public class UserVisitSessionAnalyzeSpark {
-    @Resource
-    public JavaSparkContext jsc;
-    @Resource
+public class UserVisitSessionAnalyzeSpark implements Serializable{
+    @Resource transient
+    public JavaSparkContext sc;
+    @Resource transient
     public SQLContext sqlContext;
-    @Resource
+    @Resource transient
     private TaskMapper taskMapper;
-
 
 
     public void run(String[] args) {
         //生成模拟数据
-        createMeta(jsc, sqlContext);
+        createMeta();
         //获取taskid
         Long taskId = ParamUtils.getTaskIdFromArgs(args);
         Task task = taskMapper.findTaskByTaskId(taskId);
         JSONObject params = JSONObject.parseObject(task.getTaskParam());
         //获取指定时间内的用户行为数据，并封装到RDD中
         JavaRDD<Row> actionRDD = getActionRDD(params);
-        //关闭资源
-        jsc.close();
+        //将需要的信息都聚合起来
+        JavaPairRDD<String, String> sessionid2AggrInfoRDD = sessionid2ActionsRDD(actionRDD);
+        //根绝sessioni的进行过滤
     }
 
     /**
@@ -63,12 +64,12 @@ public class UserVisitSessionAnalyzeSpark {
         return sqlContext;
     }
 
-    private  void createMeta(JavaSparkContext jsc, SQLContext sqlContext){
+    private  void createMeta(){
 //        Boolean sparkLocalMode = ConfigurationManager.getBoolean(CommonConstants.SPARK_LOCAL_MODE);
 //        if(sparkLocalMode){
 //            MockData.mock(jsc, sqlContext);
 //        }
-        MockData.mock(jsc, sqlContext);
+        MockData.mock(sc, sqlContext);
     }
 
     /**
@@ -81,9 +82,9 @@ public class UserVisitSessionAnalyzeSpark {
         String endTime = ParamUtils.getParam(params, CommonConstants.SPARK_PARAM_END_TIME);
         String sql = "" +
                 "select " +
-                "   *" +
-                "from" +
-                "   user_visit_action" +
+                "   * " +
+                "from " +
+                "   user_visit_action " +
                 "where " +
                 "   date >= '" + startTime + "'" +
                 "   and date <= '" + endTime + "'";
@@ -94,7 +95,7 @@ public class UserVisitSessionAnalyzeSpark {
 
 
     //将所有包含过滤条件的数据聚合起来
-    private JavaPairRDD<String, String> sessionid2ActionsRDD(SQLContext sqlContext, JavaRDD<Row> actionRDD){
+    private JavaPairRDD<String, String> sessionid2ActionsRDD(JavaRDD<Row> actionRDD){
         //将actionRDD转成JavaPairRDD
         JavaPairRDD<String, Row> session2ActionRDD = actionRDD.mapToPair(new PairFunction<Row, String, Row>() {
             @Override
@@ -116,7 +117,7 @@ public class UserVisitSessionAnalyzeSpark {
                 while (iterator.hasNext()){
                     Row row = iterator.next();
                     if(null == userid){
-                        userid = row.getLong(1));
+                        userid = row.getLong(1);
                     }
                     String searchKeyWord = row.getString(5);
                     Long clickCategoryId = row.getLong(6);
@@ -175,5 +176,37 @@ public class UserVisitSessionAnalyzeSpark {
         });
         //返回数据
         return sessionid2FullAggrInfoRDD;
+    }
+
+    /**
+     * 将用户行为数据根据指定条件进行过滤
+     * @param sessionid2AggrInfoRDD
+     * @param taskParams
+     * @return
+     */
+    private JavaPairRDD<String, String> filterSessionid2ActionsRDD(JavaPairRDD<String, String> sessionid2AggrInfoRDD, JSONObject taskParams){
+        //获取所有的过滤参数
+        Integer startAge = Integer.valueOf(ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_START_AGE));
+        Integer endAge = Integer.valueOf(ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_END_AGE));
+        String professionals = ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_PROFESSIONALS);
+        String sex = ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_SEX);
+        String cities = ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_CITIES);
+        String searchKeyWords = ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_SEARCH_KEYWORDS);
+        String clickCategoryIds = ParamUtils.getParam(taskParams, CommonConstants.SPARK_PARAM_CLICK_CATEGORY_IDS);
+
+        String _parameter = (startAge != null ? CommonConstants.SPARK_PARAM_START_AGE + "=" + startAge + "|" : "")
+                + (endAge != null ? CommonConstants.SPARK_PARAM_END_AGE + "=" + endAge + "|" : "")
+                + (professionals != null ? CommonConstants.SPARK_PARAM_PROFESSIONALS + "=" + professionals + "|" : "")
+                + (cities != null ? CommonConstants.SPARK_PARAM_CITIES + "=" + cities + "|" : "")
+                + (sex != null ? CommonConstants.SPARK_PARAM_SEX + "=" + sex + "|" : "")
+                + (searchKeyWords != null ? CommonConstants.SPARK_PARAM_SEARCH_KEYWORDS+ "=" + searchKeyWords + "|" : "")
+                + (clickCategoryIds != null ? CommonConstants.SPARK_PARAM_CLICK_CATEGORY_IDS + "=" + clickCategoryIds: "");
+        if(_parameter.endsWith("\\|")) {
+            _parameter = _parameter.substring(0, _parameter.length() - 1);
+        }
+
+        final String parameter = _parameter;
+
+        return null;
     }
 }
