@@ -6,6 +6,7 @@
 
 #.idea
 .idea/*
+spark-project.iml
 
 # Package Files #
 *.jar

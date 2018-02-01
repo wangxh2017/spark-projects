@@ -1,5 +1,7 @@
 package com.xuehui.conf;
 
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -9,12 +11,13 @@ import java.util.Properties;
  *
  *
  */
+@Component
 public class ConfigurationManager {
     private static Properties pro = new Properties();
 
     static {
         try {
-            InputStream is = ConfigurationManager.class.getClassLoader().getResourceAsStream("config.properties");
+            InputStream is = ConfigurationManager.class.getClassLoader().getResourceAsStream("jdbc.properties");
             pro.load(is);
         } catch (IOException e) {
             e.printStackTrace();

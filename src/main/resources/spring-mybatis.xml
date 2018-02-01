@@ -9,8 +9,19 @@
     http://www.springframework.org/schema/aop
     http://www.springframework.org/schema/aop/spring-aop-3.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
     <context:component-scan base-package="com.xuehui" />
-    <context:property-placeholder location="classpath:config.properties"
-                                  ignore-unresolvable="true" />
+    <!-- 引入配置文件 -->
+    <!--<context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true" />-->
+    <bean id="propertyConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <!-- <property name="location" value="classpath:jdbc.properties" /> -->
+        <property name="locations">
+            <list>
+                <value>classpath:jdbc.properties</value>
+                <value>classpath:spark.properties</value>
+            </list>
+        </property>
+    </bean>
+
     <!-- 配置数据源 -->
     <bean name="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
           init-method="init" destroy-method="close">

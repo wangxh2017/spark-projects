@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.xuehui.mapper.TaskMapper">
+
+    <resultMap id="taskResult" type="com.xuehui.pojo.Task">
+        <id column="task_id" property="taskId" javaType="Long" />
+        <result column="create_time" property="createTime" javaType="String" />
+        <result column="start_time" property="startTime" javaType="String" />
+        <result column="finish_time" property="finishTime" javaType="String" />
+        <result column="task_type" property="taskType" javaType="String" />
+        <result column="task_status" property="taskStatus" javaType="String" />
+        <result column="task_param" property="taskParam" javaType="String" />
+    </resultMap>
+
+    <select id="findTaskByTaskId" parameterType="java.lang.Long" resultMap="taskResult">
+        select
+          task_id,
+          create_time,
+          start_time,
+          finish_time,
+          task_type,
+          task_status,
+          task_param
+        from
+          task
+        WHERE
+          task_id=${_paramters}
+    </select>
+</mapper>
