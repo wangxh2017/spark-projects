@@ -1,5 +1,6 @@
 package com.xuehui.untils;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -126,6 +127,20 @@ public class DateUtils {
 	 */
 	public static String formatTime(Date date) {
 		return TIME_FORMAT.format(date);
+	}
+
+	/**
+	 * 解析时间字符串
+	 * @param dateTime
+	 * @return
+	 */
+	public static Date parseDateTime(String dateTime){
+		try {
+			return TIME_FORMAT.parse(dateTime);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 }

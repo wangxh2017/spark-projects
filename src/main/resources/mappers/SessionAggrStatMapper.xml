@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xuehui.mapper.SessionAggrStatMapper">
+    <insert id="insert" parameterType="com.xuehui.pojo.SessionAggrStat">
+        insert into
+          session_aggr_stat
+		values(
+		  #{taskid},
+		  #{session_count},
+		  #{visit_length_1s_3s_ratio},
+		  #{visit_length_4s_6s_ratio},
+		  #{visit_length_7s_9s_ratio},
+		  #{visit_length_10s_30s_ratio},
+		  #{visit_length_30s_60s_ratio},
+		  #{visit_length_1m_3m_ratio},
+		  #{visit_length_3m_10m_ratio},
+		  #{visit_length_10m_30m_ratio},
+		  #{visit_length_30m_ratio},
+		  #{step_length_1_3_ratio},
+		  #{step_length_4_6_ratio},
+		  #{step_length_7_9_ratio},
+		  #{step_length_10_30_ratio},
+		  #{step_length_30_60_ratio},
+		  #{step_length_60_ratio});
+    </insert>
+</mapper>
