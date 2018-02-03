@@ -30,6 +30,7 @@ public class CommonConstants {
     public static  final String SPARK_FIELD_SEX="sex";
     public static  final String SPARK_FIELD_STEP_LENGTH="stepLength";
     public static  final String SPARK_FIELD_VISIT_LENGTH="visitLength";
+    public static  final String SPARK_FIELD_START_TIME="startTime";
 
 
     /** 用户行为session粒度常量 */

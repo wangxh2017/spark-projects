@@ -8,6 +8,8 @@ import com.xuehui.pojo.SessionAggrStat;
 import com.xuehui.pojo.Task;
 import com.xuehui.untils.*;
 import org.apache.spark.Accumulator;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -23,12 +25,16 @@ import scala.Tuple2;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by Administrator on 2018/2/1.
  */
 @Service
 public class UserVisitSessionAnalyzeSpark implements Serializable{
+
+    @Resource transient
+    private SparkConf sparkConf;
 
     @Resource transient
     public JavaSparkContext sc;
@@ -44,6 +50,10 @@ public class UserVisitSessionAnalyzeSpark implements Serializable{
 
 
     public void run(String[] args) {
+        //spark并行度设置
+        sparkConf.set("spark.default.parallelism", "8");
+        sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+        sparkConf.registerKryoClasses();
         //生成模拟数据
         createMeta();
         //获取taskid
@@ -58,7 +68,9 @@ public class UserVisitSessionAnalyzeSpark implements Serializable{
         Accumulator<String> sessionAggrStatAccumulator = sc.accumulator("", new SessionAggrStatAccumulator());
         //根绝sessioni的进行过滤
         JavaPairRDD<String, String> filterSessionid2AggrInfoRDD = filterSessionid2ActionsRDD(sessionid2AggrInfoRDD, params, sessionAggrStatAccumulator);
-        filterSessionid2AggrInfoRDD.count();
+//        filterSessionid2AggrInfoRDD.count();
+        //计算出每天每小时的session的数量
+        randomExtractSession(filterSessionid2AggrInfoRDD);
         //将统计的结果持久化到mysql数据库
         calculateAndPersistAggrStat(sessionAggrStatAccumulator.value(), task.getTaskId());
 
@@ -184,7 +196,8 @@ public class UserVisitSessionAnalyzeSpark implements Serializable{
                         CommonConstants.SPARK_FIELD_SEARCH_KEYWORDS + "=" + searchKeyWords + "|" +
                         CommonConstants.SPARK_FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds + "|" +
                         CommonConstants.SPARK_FIELD_VISIT_LENGTH + "=" + visitLength + "|" +
-                        CommonConstants.SPARK_FIELD_STEP_LENGTH + "=" + stepLength;
+                        CommonConstants.SPARK_FIELD_STEP_LENGTH + "=" + stepLength + "|" +
+                        CommonConstants.SPARK_FIELD_START_TIME + startTime;
                 return new Tuple2<>(userid, partAggrInfo);
             }
         });
@@ -332,7 +345,30 @@ public class UserVisitSessionAnalyzeSpark implements Serializable{
         return filterSessionid2AggrInfoRDD;
     }
 
+    /**
+     * 计算每天每小时的session数量
+     * @param filterSessionid2AggrInfoRDD
+     */
+    private void randomExtractSession(JavaPairRDD<String, String> filterSessionid2AggrInfoRDD) {
+        JavaPairRDD<String, String> time2SessionRDD = filterSessionid2AggrInfoRDD.mapToPair(new PairFunction<Tuple2<String,String>, String, String>() {
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, String> tuple) throws Exception {
+                String aggrInfo = tuple._2;
+                String startTime = StringUtils.getFieldFromConcatString(tuple._2, "\\|", CommonConstants.SPARK_FIELD_START_TIME);
+                String hourTime = DateUtils.getDateHour(startTime);
+                return new Tuple2<>(hourTime, aggrInfo);
+            }
+        });
+        //获取到每天每小时的session数量
+        Map<String, Object> countMap = time2SessionRDD.countByKey();
+    }
 
+
+    /**
+     * 将统计的结果持久化到mysql数据库中
+     * @param value
+     * @param taskid
+     */
     private void calculateAndPersistAggrStat(String value, long taskid) {
         // 从Accumulator统计串中获取值
         long session_count = Long.valueOf(StringUtils.getFieldFromConcatString(
